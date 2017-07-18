@@ -8,3 +8,6 @@
 [DbVisualizer XML schema for Vertica](https://fossies.org/linux/dbvis_unix/resources/profiles/vertica.xml)
 
 [System Tables for Query Performance](https://my.vertica.com/kb/System-Tables-For-Performance/Content/BestPractices/System-Tables-For-Performance.htm)
+
+[SQL Style Guide](http://www.sqlstyle.guide/)
+

@@ -77,3 +77,10 @@ optional arguments:
 {"date": null, "id": 4, "val": null}]
 ```
 
+USAGE="""\
+
+    vertex.py [-U USER] [-w PASSWORD] -c "SELECT * FROM T" --format=json
+    vertex.py [-U USER] [-w PASSWORD] --sslmode="prefer" --table=T
+"""
+EPILOG = 'vertex.py is not an official HPE product(experimental or otherwise).'
+
