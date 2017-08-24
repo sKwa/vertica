@@ -26,7 +26,30 @@ string format_date(int64 days) {
     t.tm_mon = 0;
     t.tm_mday = days + 1;
     mktime(&t);
-    strftime(buffer, 13, "\"%F\"", &t);
+    strftime(buffer, 13, "%F", &t);
+    return buffer;
+}
+
+string format_time(int64 microseconds) {
+    char buffer[80];
+    int tsec = (microseconds / 1000000);
+    int usec = microseconds % 1000000;
+    int secs = tsec % 60;
+    int mins = (tsec / 60 ) % 60;
+    int hour = (tsec / 60 ) / 60;
+    snprintf(buffer, 80, "%02d:%02d:%02d.%06d", hour, mins, secs, usec);
+    return buffer;
+}
+
+string format_timestamp(int64 microseconds) {
+    char buffer[80];
+    int tsec = (microseconds / 1000000);
+    int usec = microseconds % 1000000;
+    int secs = tsec % 60;
+    int mins = (tsec / 60 ) % 60;
+    int hour = ((tsec / 60 ) / 60) % 24;
+    int days = tsec / 86400;
+    snprintf(buffer, 80, "%sT%02d:%02d:%02d.%06d", format_date(days).c_str(), hour, mins, secs, usec);
     return buffer;
 }
 
@@ -53,36 +76,25 @@ class RowToJSON : public ScalarFunction {
 
                         // value
                         const VerticaType &vt = inTypes.getColumnType(i);
-                        if (vt.isStringType()) {    // CHAR,VARCHAR,BINARY,VARBINARY
-                            const VString &fieldPtr = argReader.getStringRef(i);
-                            if (fieldPtr.isNull()) {
-                                result << "null";
-                            } else {
-                                result << "\"" << fieldPtr.str() << "\"";
-                            }
-                        } else if (vt.isInt()) {    // INTEGER
-                            vint value = argReader.getIntRef(i);
-                            if (value < -9223372036854775807) {
-                                result << "null";
-                            } else {
-                                result << value;
-                            }
-                        } else if (vt.isBool()) {   // BOOLEAN
-                            uint8 value = argReader.getBoolRef(i);
-                            if (value == 0) {
-                                result << "false";
-                            } else if (value == 1) {
-                                result << "true";
-                            } else {
-                                result << "null";
-                            }
-                        } else if (vt.isDate()) {   // DATE
-                            int64 days = argReader.getDateRef(i);
-                            if (days < -9223372036854775807) {
-                                result << "null";
-                            } else {
-                                result << format_date(days);
-                            }
+                        if (argReader.isNull(i)) {
+                            result << "null";
+                        } else if (vt.isStringType()) {     // CHAR,VARCHAR,BINARY,VARBINARY
+                            result << "\"" << argReader.getStringRef(i).str() << "\"";
+                        } else if (vt.isInt()) {            // INTEGER
+                            result << argReader.getIntRef(i);
+                        } else if (vt.isBool()) {           // BOOLEAN
+                            result << (argReader.getBoolRef(i) ? "true" : "false");
+                        } else if (vt.isDate()) {           // DATE
+                            result << "\"" << format_date(argReader.getDateRef(i)) << "\"";
+                        } else if (vt.isTime()) {           // TIME
+                            result << "\"" << format_time(argReader.getTimeRef(i)) << "\"";
+                        } else if (vt.isFloat()) {          // FLOAT
+                            result << argReader.getFloatRef(i);
+                        } else if (vt.isTimestamp()) {      // TIMESTAMP
+                            result << "\"" << format_timestamp(argReader.getTimestampRef(i)) << "\"";
+                            //result << argReader.getTimestampRef(i);
+                        } else {
+                            vt_report_error(0, "Unsupported data type [%s]", vt.getTypeStr());
                         }
                         if (i < colsNum - 1) {
                             result << ", ";
