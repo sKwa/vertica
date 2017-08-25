@@ -37,7 +37,7 @@ string format_time(int64 microseconds) {
     int secs = tsec % 60;
     int mins = (tsec / 60 ) % 60;
     int hour = (tsec / 60 ) / 60;
-    snprintf(buffer, 80, "%02d:%02d:%02d.%06d", hour, mins, secs, usec);
+    snprintf(buffer, 80, "%02d:%02d:%02d.%d", hour, mins, secs, usec);
     return buffer;
 }
 
@@ -49,7 +49,18 @@ string format_timestamp(int64 microseconds) {
     int mins = (tsec / 60 ) % 60;
     int hour = ((tsec / 60 ) / 60) % 24;
     int days = tsec / 86400;
-    snprintf(buffer, 80, "%sT%02d:%02d:%02d.%06d", format_date(days).c_str(), hour, mins, secs, usec);
+    snprintf(buffer, 80, "%sT%02d:%02d:%02d.%d", format_date(days).c_str(), hour, mins, secs, usec);
+    return buffer;
+}
+
+string format_interval(int64 microseconds) {
+    char buffer[80];
+    int tsec = (microseconds / 1000000);
+    int usec = microseconds % 1000000;
+    int secs = tsec % 60;
+    int mins = (tsec / 60 ) % 60;
+    int hour = (tsec / 60 ) / 60;
+    snprintf(buffer, 80, "%d days %2d mins %2d.%d secs", hour, mins, secs, usec);
     return buffer;
 }
 
@@ -95,7 +106,12 @@ class RowToJSON : public ScalarFunction {
                             result << "\"" << format_time(argReader.getTimeRef(i)) << "\"";
                         } else if (vt.isTimestamp()) {      // TIMESTAMP
                             result << "\"" << format_timestamp(argReader.getTimestampRef(i)) << "\"";
-                        } else if (vt.isStringType()) {     // CHAR,VARCHAR,BINARY,VARBINARY
+                        } else if (vt.isInterval()) {       // INTERVAL
+                            result << format_interval(argReader.getIntervalRef(i));
+                        } else if (vt.isIntervalYM()) {     // INTERVALYM
+                            result << argReader.getIntervalRef(i);
+                                                            // STRING
+                        } else if (vt.isChar() || vt.isVarchar() || vt.isLongVarchar()) {
                             result << "\"" << argReader.getStringRef(i).str() << "\"";
                         } else {
                             vt_report_error(0, "Unsupported data type [%s]", vt.getTypeStr());
