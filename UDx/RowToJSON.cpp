@@ -78,21 +78,25 @@ class RowToJSON : public ScalarFunction {
                         const VerticaType &vt = inTypes.getColumnType(i);
                         if (argReader.isNull(i)) {
                             result << "null";
-                        } else if (vt.isStringType()) {     // CHAR,VARCHAR,BINARY,VARBINARY
-                            result << "\"" << argReader.getStringRef(i).str() << "\"";
-                        } else if (vt.isInt()) {            // INTEGER
-                            result << argReader.getIntRef(i);
                         } else if (vt.isBool()) {           // BOOLEAN
                             result << (argReader.getBoolRef(i) ? "true" : "false");
+                        } else if (vt.isInt()) {            // INTEGER
+                            result << argReader.getIntRef(i);
+                        } else if (vt.isFloat()) {          // FLOAT
+                            result << argReader.getFloatRef(i);
+                        } else if (vt.isNumeric()) {        // NUMERIC
+                            const int32 len = vt.getNumericPrecision() + 1;
+                            char buffer[len];
+                            argReader.getNumericRef(i).toString(buffer, len);
+                            result << buffer;
                         } else if (vt.isDate()) {           // DATE
                             result << "\"" << format_date(argReader.getDateRef(i)) << "\"";
                         } else if (vt.isTime()) {           // TIME
                             result << "\"" << format_time(argReader.getTimeRef(i)) << "\"";
-                        } else if (vt.isFloat()) {          // FLOAT
-                            result << argReader.getFloatRef(i);
                         } else if (vt.isTimestamp()) {      // TIMESTAMP
                             result << "\"" << format_timestamp(argReader.getTimestampRef(i)) << "\"";
-                            //result << argReader.getTimestampRef(i);
+                        } else if (vt.isStringType()) {     // CHAR,VARCHAR,BINARY,VARBINARY
+                            result << "\"" << argReader.getStringRef(i).str() << "\"";
                         } else {
                             vt_report_error(0, "Unsupported data type [%s]", vt.getTypeStr());
                         }
