@@ -10,7 +10,7 @@
 #define LIBRARY_VERSION "0.1"
 #define LIBRARY_SDK_VERSION "VER_8_0_RELEASE_BUILD_1_6_20170616"
 #define SOURCE_URL "github.com/sKwa"
-#define DESCRIPTION "Concatenates the values"
+#define DESCRIPTION "Converts row to JSON"
 #define LICENSES_REQUIRED ""
 #define SIGNATURE ""
 
