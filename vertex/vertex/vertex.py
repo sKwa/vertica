@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-
 # -*- coding: utf-8 -*-
-#
 """vertex.py - convert your SQL table or query to JSON/CSV/XML format."""
 
 # python stdlib imports
@@ -13,24 +11,36 @@ from itertools import izip
 from datetime import time, date, datetime
 
 # The HPE Vertica Python driver
-import hp_vertica_client as adapter
+try:
+    # vertica 7.2.x, 8.0.x
+    import hp_vertica_client as adapter
+except ImportError:
+    # vertica 8.1.x, 9.0.x
+    import vertica_db_client as adapter
 
 
 __version__ = '0.0.1a'
 
 
 class Arguments(argparse.Namespace):
+    """Simple object for storing attributes."""
 
     def __init__(self, **kwargs):
         super(Arguments, self).__init__(**kwargs)
 
     @property
-    def conn_options(self):
+    def connection_options(self):
         options = dict()
-        options['database'] = self.database
-        options['host']     = self.host
-        options['user']     = self.user
-        options['password'] = self.password
+        options['host'] = self.host
+        options['port'] = self.port
+        if self.database:
+            options['database'] = self.database
+        options['user'] = self.user
+        if self.password:
+            options['password'] = self.password
+        options['sslmode'] = self.sslmode
+        if self.sessionlabel:
+            options['sessionlabel'] = self.sessionlabel
         return options
 
     @property
@@ -90,10 +100,10 @@ def parse_args(args=None, namespace=Arguments()):
     mutual_args = group.add_mutually_exclusive_group(required=True)
 
     mutual_args.add_argument('-i', '--input', dest='input',
-        help='query to exeport.')
+        help='query to export.')
 
     mutual_args.add_argument('-t', '--table', dest='table',
-        help='table to exeport.')
+        help='table to export.')
 
     group.add_argument('-o', '--output', dest='filename', required=False,
         help='writes all query output into file filename.')
@@ -139,24 +149,15 @@ if __name__ == '__main__':
     if not sys.argv[1:]:
         parse_args(args=['--help',])
     args = parse_args()
-    print args.conn_options
-   # database, user, password, host, port = args.database, args.user, args.password, args.host, args.port
-   # query = args.command
+    print args.connection_options
 
-   # connection = adapter.connect(database=database, user=user, password=password, host=host, port=port)
-   # cursor = connection.cursor()
-   # cursor.execute(query)
+    query = args.command
 
-   # if args.format == 'json':
-   #     to_json(cursor)
-   # elif args.format == 'csv':
-   #     to_csv(cursor)
-   # elif args.format == 'xml':
-   #     to_xml(cursor)
-   # else:
-   #     to_html(cursor)
-
-   # cursor.close()
-   # connection.close()
+    connection = adapter.connect(**args.connection_options)
+    cursor = connection.cursor()
+    cursor.execute('select 1')
+    print cursor.fetchone()
+    cursor.close()
+    connection.close()
 
 # EOF
