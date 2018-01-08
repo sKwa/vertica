@@ -13,10 +13,10 @@ from datetime import time, date, datetime
 # The HPE Vertica Python driver
 try:
     # vertica 7.2.x, 8.0.x
-    import hp_vertica_client as adapter
+    import hp_vertica_client as driver
 except ImportError:
     # vertica 8.1.x, 9.0.x
-    import vertica_db_client as adapter
+    import vertica_db_client as driver
 
 
 __version__ = '0.0.1a'
@@ -58,8 +58,7 @@ def parse_args(args=None, namespace=Arguments()):
     parser = argparse.ArgumentParser(
         prog='vertex.py',
         description=__doc__,
-        conflict_handler='resolve'
-    )
+        conflict_handler='resolve')
 
     # CONNECTION OPTIONS
     group = parser.add_argument_group(title='CONNECTION OPTION',
@@ -128,7 +127,7 @@ def json_serial(field):
     if isinstance(field, (time, date)):
         return field.isoformat()
     raise TypeError("Type %s not serializable" % type(field))
-    
+
 
 def to_json(cursor):
     """Convert your SQL table or query to JSON format."""
@@ -144,7 +143,22 @@ def to_json(cursor):
         yield ',{}'.format(json_data)
     yield ']\n'
 
-        
+
+def to_xml(cursor):
+    """Lets you retrieve data as XML."""
+    header = '<?xml version="1.0" encoding="UTF-8" ?>\n<root>\n'
+    colnames = tuple(colmeta.name for colmeta in cursor.description)
+    yield header
+    while True:
+        row = cursor.fetchone()
+        if not row:
+            break
+        xml_data = '  <row>\n'
+        for (column, value) in izip(colnames, row):
+            xml_data += '    <{}>{}</{}>\n'.format(column, value, column)
+        yield xml_data + '  </row>\n'
+    yield '</root>\n'
+
 
 def main():
     # parse comman line arguments
@@ -152,14 +166,14 @@ def main():
         parse_args(args=['--help',])
     args = parse_args()
     # estabish connection
-    connection = adapter.connect(**args.connection_options)
+    connection = driver.connect(**args.connection_options)
     cursor = connection.cursor()
     # validate query
     if args.input:
         query = args.input
         try:
             cursor.execute('SELECT * FROM ({}) AS T LIMIT 0'.format(query))
-        except adapter.ProgrammingError as error:
+        except driver.ProgrammingError as error:
             print error
             sys.exit(-1) # raise invalid query
         cursor.execute(query)
