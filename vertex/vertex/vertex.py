@@ -132,32 +132,65 @@ def json_serial(field):
 
 def to_json(cursor):
     """Convert your SQL table or query to JSON format."""
-    colnames =  tuple(colmeta.name for colmeta in cursor.description)
-    if len(colnames) != len(set(colnames)):
-        raise ValueError('columns names are not unique')
-    sys.stdout.write('[')
+    colnames = tuple(colmeta.name for colmeta in cursor.description)
+    row = cursor.fetchone()
+    json_data = json.dumps(dict(izip(colnames, row)), default=json_serial)
+    yield '[{}'.format(json_data)
     while True:
         row = cursor.fetchone()
         if not row:
             break
-        sys.stdout.write(json.dumps(dict(izip(colnames, row)), default=json_serial))
-        writer(',\n')
-    writer(']\n')
+        json_data = json.dumps(dict(izip(colnames, row)), default=json_serial)
+        yield ',{}'.format(json_data)
+    yield ']\n'
 
+        
 
-if __name__ == '__main__':
+def main():
+    # parse comman line arguments
     if not sys.argv[1:]:
         parse_args(args=['--help',])
     args = parse_args()
-    print args.connection_options
-
-    query = args.command
-
+    # estabish connection
     connection = adapter.connect(**args.connection_options)
     cursor = connection.cursor()
-    cursor.execute('select 1')
-    print cursor.fetchone()
+    # validate query
+    if args.input:
+        query = args.input
+        try:
+            cursor.execute('SELECT * FROM ({}) AS T LIMIT 0'.format(query))
+        except adapter.ProgrammingError as error:
+            print error
+            sys.exit(-1) # raise invalid query
+        cursor.execute(query)
+        if cursor.rowcount < 1:
+            print 'No data to export'
+            sys.exit(0)
+        # format ouput
+        if args.format == 'json':
+            output_stream = to_json(cursor)
+        elif args.format == 'csv':
+            output_stream = to_csv(cursor)
+        elif args.format == 'xml':
+            output_stream = to_xml(cursor)
+        else: # on case of custom implemintation of arguments parsing
+            raise Exception('invalid format {}'.format(args.format))
+        # write result
+        writer = sys.stdout
+        if args.filename:
+            writer = open(args.filename, 'wb')
+        for line in output_stream:
+            writer.write(line)
+        writer.close()
+
+    # clean up
     cursor.close()
     connection.close()
+
+    # exit
+    sys.exit(0)
+
+if __name__ == '__main__':
+    main()
 
 # EOF
