@@ -1,26 +1,34 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """vertex.py - convert your SQL table or query to JSON/CSV/XML format."""
 
 # python stdlib imports
 import csv
 import sys
 import json
+import logging
 import argparse
+import cStringIO
 from itertools import izip
 from datetime import time, date, datetime
 
-# The HPE Vertica Python driver
+# External dependencies
 try:
     # vertica 7.2.x, 8.0.x
-    import hp_vertica_client as driver
+    import hp_vertica_client as driver  # pylint: disable=import-error
 except ImportError:
     # vertica 8.1.x, 9.0.x
-    import vertica_db_client as driver
+    import vertica_db_client as driver  # pylint: disable=import-error
 
 
 __version__ = '0.0.1a'
 
+# supported under linux & python 2.7.x
+PY_VERSION = sys.version_info[:2]
+if PY_VERSION != (2, 7):
+    raise EnvironmentError('requires Python 2.7.x, but you have {}.{}.x'.format(PY_VERSION))
+if not sys.platform.startswith('linux'):
+    raise EnvironmentError('Currently, the Vertica Python Client is compatible only with Linux systems')
 
 class Arguments(argparse.Namespace):
     """Simple object for storing attributes."""
@@ -30,6 +38,7 @@ class Arguments(argparse.Namespace):
 
     @property
     def connection_options(self):
+        """Returns `dict` with connection options."""
         options = dict()
         options['host'] = self.host
         options['port'] = self.port
@@ -45,11 +54,13 @@ class Arguments(argparse.Namespace):
 
     @property
     def io_options(self):
-        return {}
+        """TODO docstring."""
+        return vars(self)
 
     @property
     def general_options(self):
-        return {}
+        """TODO docstring."""
+        return vars(self)
 
 
 def parse_args(args=None, namespace=Arguments()):
@@ -65,7 +76,7 @@ def parse_args(args=None, namespace=Arguments()):
         description='Specifies all settings required to make a connection.')
 
     group.add_argument('-h', '--host', dest='host', default='localhost',
-        help='the name of the host. (default localhost)') 
+        help='the name of the host. (default localhost)')
 
     group.add_argument('-p', '--port', dest='port', default=5433, type=int,
         help='the port number on which HP Vertica listens. (default 5433)')
@@ -81,7 +92,7 @@ def parse_args(args=None, namespace=Arguments()):
         help='the password for the user\'s account.')
 
     group.add_argument('-s', '--sslmode', dest='sslmode', default='prefer',
-        choices=['require', 'prefer', 'allow', 'disable'], 
+        choices=['require', 'prefer', 'allow', 'disable'],
         help='specifies how (or whether) clients use SSL when connecting '   \
              'to servers. The default value is prefer, meaning to use SSL '  \
              'if the server offers it.')
@@ -107,13 +118,33 @@ def parse_args(args=None, namespace=Arguments()):
     group.add_argument('-o', '--output', dest='filename', required=False,
         help='writes all query output into file filename.')
 
-    group.add_argument('-F', '--format', dest='format', default='json',
-        choices=['csv', 'json', 'xml'], help='output format for query.')
+    subparsers = parser.add_subparsers(title='OUTPUT FORMAT', dest='format')
+
+    # JSON FORMAT OPTIONS
+    json_parser = subparsers.add_parser('JSON', help='JSON options help')
+    group = json_parser.add_argument_group('JSON FORMAT OPTIONS')
+    group.add_argument('--indent', type=int, help='indent level')
+    group.add_argument('--skip-keys', action='store_false', help='skip instead of raise')
+    group.add_argument('--encoding', dest='encoding', default='utf-8',
+        required=False, metavar='ENC', help='the character encoding for str instances.')
+    
+    xml_parser = subparsers.add_parser('XML', help='XML options help')
+    xml_parser.add_argument('--indent', type=int, help='indent level')
+    xml_parser.add_argument('--skip-keys', action='store_false', help='skip instead of raise')
+    
+    csv_parser = subparsers.add_parser('CSV', help='CSV options help')
+    group = csv_parser.add_argument_group('CSV DIALECT OPTIONS')
+    group.add_argument('--delimiter', type=str, help='field separator.')
+    group.add_argument('--eol', type=str, help='rows terminator.')
+
 
     # GENERAL OPTIONS
     group = parser.add_argument_group(title='GENERAL OPTIONS')
 
-    group.add_argument('-V', '--version', action='version', 
+    group.add_argument('-L', '--logfile', dest='logfile', required=False,
+        help='path to the logfile where execution traces will be written.')
+
+    group.add_argument('-V', '--version', action='version',
         version='%(prog)s {}'.format(__version__))
 
     group.add_argument('-?', '--help', action='help',
@@ -160,7 +191,19 @@ def to_xml(cursor):
     yield '</root>\n'
 
 
+def to_csv(cursor):
+    """convert data to csv fomat"""
+    colnames = tuple(colmeta.name for colmeta in cursor.description)
+    queue = cStringIO.StringIO()
+    writer = csv.writer(queue)
+    writer.writerow(colnames)
+    data = queue.getvalue()
+    queue.truncate(0)
+    yield data
+
+
 def main():
+    """main entry point."""
     # parse comman line arguments
     if not sys.argv[1:]:
         parse_args(args=['--help',])
