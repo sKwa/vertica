@@ -1,8 +1,14 @@
-/*
- *
- */
 #include <exception>
 #include "Vertica.h"
+
+#define AUTHOR "Daniel Leybovich"
+#define LIBRARY_BUILD_TAG "betta"
+#define LIBRARY_VERSION "0.1"
+#define LIBRARY_SDK_VERSION "VER_8_1_RELEASE_BUILD_1_10_20171207"
+#define SOURCE_URL "github.com/sKwa"
+#define DESCRIPTION "Returns the sum of row."
+#define LICENSES_REQUIRED ""
+#define SIGNATURE ""
 
 using namespace std;
 using namespace Vertica;
@@ -25,10 +31,15 @@ public:
     }
 
     virtual void processBlock(ServerInterface &srvInterface, BlockReader &argReader, BlockWriter &resWriter) {
+        const SizedColumnTypes &inTypes = argReader.getTypeMetaData();
         try {            
             do {
                 vint sum = 0;
-                for (uint i = 0; i < argReader.getNumCols(); i++){
+                for (uint i = 0; i < argReader.getNumCols(); i++) {
+                    string columnName = inTypes.getColumnName(i).c_str();
+                    if (!allRow && columnName == excludeColumn) {
+                        continue;
+                    }
                     sum += argReader.getIntRef(i);
                 }
                 resWriter.setInt(sum);
@@ -52,12 +63,18 @@ class RowSumFactory : public ScalarFunctionFactory {
     }
 
     virtual void getReturnType(ServerInterface &srvInterface, const SizedColumnTypes &argTypes, SizedColumnTypes &returnType) {
+        // set coulmn name for output
+        // It doesn't work but on any case
         returnType.addInt("SUM_TRUE");
     }
 
     virtual void getParameterType(ServerInterface &srvInterface, SizedColumnTypes &parameterTypes) {
+        // Vertica system limits:
+        // Length of basic names - 128 bytes. Basic names include table names, column names, etc.
         parameterTypes.addVarchar(128, "exclude");
     }
 };
 
 RegisterFactory(RowSumFactory);
+
+RegisterLibrary(AUTHOR, LIBRARY_BUILD_TAG, LIBRARY_VERSION, LIBRARY_SDK_VERSION, SOURCE_URL, DESCRIPTION, LICENSES_REQUIRED, SIGNATURE);
