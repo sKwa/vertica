@@ -16,31 +16,36 @@ using namespace Vertica;
 class RowSum : public ScalarFunction {
 
 private:
-    bool allRow;
-    string excludeColumn;
+    vector<int> columns;
 
 public:
 
     virtual void setup(ServerInterface &srvInterface, const SizedColumnTypes &argTypes) {
         ParamReader paramReader = srvInterface.getParamReader();
-        allRow = true;
+        int colCount = argTypes.getColumnCount();
         if (paramReader.containsParameter("exclude")) {
-            allRow = false;
-            excludeColumn = paramReader.getStringRef("exclude").str();
+            string excludeColumn = paramReader.getStringRef("exclude").str();
+            columns.reserve(colCount - 1);
+            for (int i = 0; i < colCount; i++) {
+                if (argTypes.getColumnName(i).c_str() == excludeColumn) {
+                    continue;
+                }
+                columns.push_back(i);
+            }
+        } else {
+            columns.reserve(colCount);
+            for (int i = 0; i < colCount; i++) {
+                columns.push_back(i);
+            }
         } 
     }
 
     virtual void processBlock(ServerInterface &srvInterface, BlockReader &argReader, BlockWriter &resWriter) {
-        const SizedColumnTypes &inTypes = argReader.getTypeMetaData();
         try {            
             do {
                 vint sum = 0;
-                for (uint i = 0; i < argReader.getNumCols(); i++) {
-                    string columnName = inTypes.getColumnName(i).c_str();
-                    if (!allRow && columnName == excludeColumn) {
-                        continue;
-                    }
-                    sum += argReader.getIntRef(i);
+                for (uint i = 0; i < columns.size(); i++) {
+                    sum += argReader.getIntRef(columns[i]);
                 }
                 resWriter.setInt(sum);
                 resWriter.next();
