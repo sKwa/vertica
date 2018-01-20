@@ -21,6 +21,7 @@ private:
 public:
 
     virtual void setup(ServerInterface &srvInterface, const SizedColumnTypes &argTypes) {
+        // TODO: data type validation, ints only
         ParamReader paramReader = srvInterface.getParamReader();
         int colCount = argTypes.getColumnCount();
         if (paramReader.containsParameter("exclude")) {
