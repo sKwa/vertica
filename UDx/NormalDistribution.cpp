@@ -1,7 +1,6 @@
 /*
  * File         : NormalDistribution.cpp
  * Description  : Gaussian (Normal) Distribution
- * Copyright    : Copyright (c) 2014 Daniel Leybovich
  * Author       : Daniel Leybovich
  * Create Date  : Jan 10, 2014
  * --------------------------------------------------------------------------
