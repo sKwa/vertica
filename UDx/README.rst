@@ -1,5 +1,32 @@
+======
 README
 ======
+
+
++----------------------+-----------------------------------------------------+
+| Function             | Description                                         |
++======================+=====================================================+
+| Soundex              | phonetic algorithm for indexing names by sound, as  |
+|                      | pronounced in English.                              |
++----------------------+-----------------------------------------------------+
+| IsNumeric            | determines whether an expression is a valid numeric |
+|                      | type.                                               |
++----------------------+-----------------------------------------------------+
+| RandomString         | generates a random string.                          |
++----------------------+-----------------------------------------------------+
+| SpellOutNumber       | spells out numbers in words.                        |
++----------------------+-----------------------------------------------------+
+| Unpivot              | rotates columns of a table-valued expression into   |
+|                      | column values.                                      |
++----------------------+-----------------------------------------------------+
+| ListAgg              | allows for many table columns to be displayed within|
+|                      | a single row.                                       |
++----------------------+-----------------------------------------------------+
+| NormalDistribution   | produces random numbers around the distribution mean|
+|                      | (μ) with a specific standard deviation (σ).         |
++----------------------+-----------------------------------------------------+
+
+
 
 *C++ SDK Documentation*
   * https://my.vertica.com/docs/8.0.x/HTML/CppSDK/annotated.htm
