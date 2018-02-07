@@ -3,28 +3,28 @@ README
 ======
 
 
-+----------------------+-----------------------------------------------------+
-| Function             | Description                                         |
-+======================+=====================================================+
-| Soundex              | phonetic algorithm for indexing names by sound, as  |
-|                      | pronounced in English.                              |
-+----------------------+-----------------------------------------------------+
-| IsNumeric            | determines whether an expression is a valid numeric |
-|                      | type.                                               |
-+----------------------+-----------------------------------------------------+
-| RandomString         | generates a random string.                          |
-+----------------------+-----------------------------------------------------+
-| SpellOutNumber       | spells out numbers in words.                        |
-+----------------------+-----------------------------------------------------+
-| Unpivot              | rotates columns of a table-valued expression into   |
-|                      | column values.                                      |
-+----------------------+-----------------------------------------------------+
-| ListAgg              | allows for many table columns to be displayed within|
-|                      | a single row.                                       |
-+----------------------+-----------------------------------------------------+
-| NormalDistribution   | produces random numbers around the distribution mean|
-|                      | (μ) with a specific standard deviation (σ).         |
-+----------------------+-----------------------------------------------------+
++-----------------------+-----------------------------------------------------+
+| UDFx                  | Description                                         |
++=======================+=====================================================+
+| Soundex.cpp           | phonetic algorithm for indexing names by sound, as  |
+|                       | pronounced in English.                              |
++-----------------------+-----------------------------------------------------+
+| IsNumeric.cpp         | determines whether an expression is a valid numeric |
+|                       | type.                                               |
++-----------------------+-----------------------------------------------------+
+| RandomString.cpp      | generates a random string.                          |
++-----------------------+-----------------------------------------------------+
+| SpellOutNumber.cpp    | spells out numbers in words.                        |
++-----------------------+-----------------------------------------------------+
+| Unpivot.cpp           | rotates columns of a table-valued expression into   |
+|                       | column values.                                      |
++-----------------------+-----------------------------------------------------+
+| ListAgg.cpp           | allows for many table columns to be displayed within|
+|                       | a single row.                                       |
++-----------------------+-----------------------------------------------------+
+| NormalDistribution.cpp| produces random numbers around the distribution mean|
+|                       | (μ) with a specific standard deviation (σ).         |
++-----------------------+-----------------------------------------------------+
 
 
 
