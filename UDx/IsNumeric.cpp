@@ -19,16 +19,17 @@ class IsNumeric : public ScalarFunction {
     public:
         virtual void processBlock(ServerInterface &srvInterface, BlockReader &argReader, BlockWriter &resWriter) {
             try {
-                if (argReader.getNumCols() != 1) {
-                    vt_report_error(0, "Function only accept 1 arguments, but %zu provided", argReader.getNumCols());
-                }
                 do {
-                    string value = argReader.getStringRef(0).str();
+                    VString data = argReader.getStringRef(0);
+                    char value[data.length()];
                     char* pointer;
-                    strtod(value.c_str(), &pointer);
-                    vbool isNum = (*pointer == 0);
+                    strncpy(value, data.data(), data.length());
+                    value[data.length()] = '\0';
+                    strtod(value, &pointer);
+                    vbool isNum = (*pointer == 0 || pointer == value);
                     resWriter.setBool(isNum);
                     resWriter.next();
+                    //srvInterface.log("VALUE: %s", value);
                 } while (argReader.next());
             } catch(std::exception& e) {
                 vt_report_error(0, "Exception while processing block: [%s]", e.what());
