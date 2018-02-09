@@ -1,13 +1,7 @@
 /****************************************************************************
- * Scientific notation  1e10    10000000000
- * BINARY scaling       1p10    1024
- * Hexadecimal          0x0abc  2748
- * Float                0.1     0.1
- *
- * Special cases:
- *  - NAN
- *  - INF/INFINITY
- *
+ * TODO: 
+ *     - trim spaces --> ???
+ *     - add meta
  ****************************************************************************/
 #include "Vertica.h"
 
@@ -20,18 +14,22 @@ class IsNumeric : public ScalarFunction {
         virtual void processBlock(ServerInterface &srvInterface, BlockReader &argReader, BlockWriter &resWriter) {
             try {
                 do {
-                    VString data = argReader.getStringRef(0);
-                    char value[data.length()];
-                    char* pointer;
-                    strncpy(value, data.data(), data.length());
-                    value[data.length()] = '\0';
-                    strtod(value, &pointer);
-                    vbool isNum = (*pointer == 0 || pointer == value);
-                    resWriter.setBool(isNum);
+                    if (argReader.isNull(0)) {
+                        resWriter.setNull();
+                    } else {
+                        VString data = argReader.getStringRef(0);
+                        uint32 length = data.length();
+                        char value[length];
+                        char* pointer;
+                        strncpy(value, data.data(), length);
+                        value[length] = '\0';
+                        strtod(value, &pointer);
+                        vbool isNum = (*pointer == 0);
+                        resWriter.setBool(isNum);
+                    }
                     resWriter.next();
-                    //srvInterface.log("VALUE: %s", value);
                 } while (argReader.next());
-            } catch(std::exception& e) {
+            } catch(exception& e) {
                 vt_report_error(0, "Exception while processing block: [%s]", e.what());
             }
         }
@@ -54,24 +52,3 @@ class IsNumericFactory : public ScalarFunctionFactory {
 };
 
 RegisterFactory(IsNumericFactory);
-
-// daniel=> select str, DECODE(is_numeric(str), 't', 'TRUE', 'f', 'FALSE') from nums ;
-//     str    | case  
-// -----------+-------
-//  0X0DEAD   | TRUE
-//  0x0abc    | TRUE
-//  1 foo bar | FALSE
-//  1P10      | FALSE    <----- err
-//  1e10      | TRUE
-//  1p10      | FALSE    <----- err
-//  40        | TRUE
-//  45.0      | TRUE
-//  999.999   | TRUE
-//  INFINITY  | TRUE
-//  Infinity  | TRUE
-//  NAN       | TRUE
-//  bar       | FALSE
-//  egg 4     | FALSE
-//  iNf       | TRUE
-//  nAn       | TRUE
-// (16 rows)
