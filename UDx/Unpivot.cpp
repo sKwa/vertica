@@ -7,10 +7,11 @@
  * @brief   Rotates row data to columns.
  *
  * @section DESCRIPTION
- * 
+ *
  * UNPIVOT provides a mechanism for transforming columns into rows.
  */
 #include <sstream>
+#include <iomanip>
 #include "Vertica.h"
 
 using namespace std;
@@ -37,7 +38,7 @@ void unpivot(PartitionReader &inputReader, PartitionWriter &outputWriter) {
                 } else if (dataType.isInt()) {
                     result << inputReader.getIntRef(i);
                 } else if (dataType.isFloat()) {
-                    result << inputReader.getFloatRef(i);
+                    result << std::setprecision(std::numeric_limits<vfloat>::digits10 + 1) << inputReader.getFloatRef(i);
                 } else if (dataType.isNumeric()) {
                     const int32 len = dataType.getNumericPrecision() + 1;
                     char buffer[len];
@@ -83,7 +84,7 @@ class UnpivotFactory : public TransformFunctionFactory {
     }
 
     virtual TransformFunction *createTransformFunction(ServerInterface &srvInterface) {
-        return vt_createFuncObj(srvInterface.allocator, Unpivot); 
+        return vt_createFuncObj(srvInterface.allocator, Unpivot);
     }
 };
 
